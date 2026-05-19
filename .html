@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-PT">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Jogo da Velha Premium</title>
+    <title>Jogo do Galo Premium</title>
     <!-- Tailwind CSS para estilização rápida e moderna -->
     <script src="https://cdn.tailwindcss.com"></script>
     <!-- Lucide Icons para ícones bonitos -->
@@ -13,7 +13,15 @@
         
         body {
             font-family: 'Outfit', sans-serif;
-            background-color: #e6f4ea; /* Fundo verde claro agradável */
+            transition: background-color 0.5s ease, color 0.5s ease;
+        }
+
+        /* Classes de transição suave para os Temas */
+        .theme-green {
+            background-color: #e6f4ea; /* Verde claro */
+        }
+        .theme-blue {
+            background-color: #e0f2fe; /* Azul claro / Oceano */
         }
 
         .grid-cell {
@@ -21,13 +29,16 @@
         }
 
         .grid-cell:hover:not(.occupied) {
-            background-color: rgba(255, 255, 255, 0.8);
+            background-color: rgba(255, 255, 255, 0.85);
             transform: scale(1.02);
         }
 
-        /* Efeito de brilho para a linha vencedora */
-        .winning-cell {
+        /* Efeitos de brilho dinâmicos para a linha vencedora dependendo do tema */
+        .winning-cell-green {
             animation: pulse-green 1.5s infinite alternate;
+        }
+        .winning-cell-blue {
+            animation: pulse-blue 1.5s infinite alternate;
         }
 
         @keyframes pulse-green {
@@ -40,26 +51,49 @@
                 box-shadow: 0 0 20px rgba(74, 222, 128, 0.8);
             }
         }
+
+        @keyframes pulse-blue {
+            0% {
+                background-color: #bae6fd;
+                box-shadow: 0 0 10px rgba(56, 189, 248, 0.5);
+            }
+            100% {
+                background-color: #7dd3fc;
+                box-shadow: 0 0 20px rgba(56, 189, 248, 0.8);
+            }
+        }
     </style>
 </head>
-<body class="min-h-screen flex flex-col items-center justify-between p-4 md:p-8">
+<body class="theme-green min-h-screen flex flex-col items-center justify-between p-4 md:p-8">
 
-    <!-- Cabeçalho / Título -->
-    <header class="text-center my-4 w-full max-w-md">
-        <h1 class="text-4xl font-extrabold text-emerald-800 tracking-tight flex items-center justify-center gap-2">
-            <i data-lucide="gamepad-2" class="w-10 h-10 text-emerald-600"></i>
-            Jogo da Velha
-        </h1>
-        <p class="text-emerald-700 font-medium mt-1">Divirta-se jogando solo ou com amigos!</p>
+    <!-- Cabeçalho / Título e Seletor de Tema -->
+    <header class="text-center my-2 w-full max-w-md flex flex-col items-center gap-3">
+        <!-- Seletor de Tema Compacto -->
+        <div class="flex items-center gap-2 bg-white/60 backdrop-blur-md px-3 py-1.5 rounded-full border border-black/5 shadow-sm">
+            <span class="text-xs font-bold text-gray-600 flex items-center gap-1">
+                <i data-lucide="palette" class="w-3.5 h-3.5 text-gray-500"></i> Tema:
+            </span>
+            <button id="theme-btn-green" class="w-6 h-6 rounded-full bg-emerald-500 ring-2 ring-offset-2 ring-emerald-600 transition-all focus:outline-none" title="Tema Relvado"></button>
+            <button id="theme-btn-blue" class="w-6 h-6 rounded-full bg-sky-500 hover:scale-110 transition-all focus:outline-none" title="Tema Oceano"></button>
+        </div>
+
+        <div>
+            <h1 id="main-title" class="text-4xl font-extrabold text-emerald-800 tracking-tight flex items-center justify-center gap-2 transition-colors duration-500">
+                <i id="main-title-icon" data-lucide="gamepad-2" class="w-10 h-10 text-emerald-600 transition-colors duration-500"></i>
+                Jogo do Galo
+            </h1>
+            <p id="sub-title" class="text-emerald-700 font-medium mt-1 transition-colors duration-500">Diverte-te a jogar a solo ou com amigos!</p>
+        </div>
     </header>
 
     <!-- Painel de Controle e Status -->
-    <main class="w-full max-w-md flex flex-col items-center gap-6">
+    <main class="w-full max-w-md flex flex-col items-center gap-4">
         
-        <!-- Seleção de Modo de Jogo e Placar -->
-        <div class="bg-white/80 backdrop-blur-md rounded-2xl p-4 shadow-md w-full flex flex-col gap-4 border border-emerald-100">
-            <!-- Modos -->
-            <div class="flex bg-emerald-100 p-1 rounded-xl">
+        <!-- Seleção de Modo de Jogo, Configurações e Placar -->
+        <div class="bg-white/80 backdrop-blur-md rounded-2xl p-4 shadow-md w-full flex flex-col gap-4 border border-emerald-100 transition-colors duration-500" id="control-panel">
+            
+            <!-- Modos de Jogo -->
+            <div class="flex bg-emerald-100 p-1 rounded-xl transition-colors duration-500" id="mode-container">
                 <button id="btn-pvp" class="flex-1 py-2 text-sm font-semibold rounded-lg text-emerald-800 bg-white shadow transition-all duration-200 flex items-center justify-center gap-1">
                     <i data-lucide="users" class="w-4 h-4"></i> 2 Jogadores
                 </button>
@@ -68,41 +102,62 @@
                 </button>
             </div>
 
+            <!-- Painel de Nomes dos Jogadores -->
+            <div class="grid grid-cols-2 gap-3 border-t border-emerald-50 pt-3" id="names-container">
+                <div>
+                    <label class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">Nome Jogador X</label>
+                    <input type="text" id="input-name-x" value="Jogador X" maxlength="12" class="w-full px-3 py-1.5 text-sm bg-white border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-emerald-900 font-medium transition-all" />
+                </div>
+                <div>
+                    <label id="label-name-o" class="text-[10px] font-bold text-emerald-800 uppercase tracking-wider block mb-1">Nome Jogador O</label>
+                    <input type="text" id="input-name-o" value="Jogador O" maxlength="12" class="w-full px-3 py-1.5 text-sm bg-white border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-emerald-900 font-medium transition-all" />
+                </div>
+            </div>
+
+            <!-- Seleção de Dificuldade (Visível apenas no modo Contra IA) -->
+            <div id="difficulty-container" class="hidden flex items-center justify-between border-t border-emerald-50 pt-2 transition-all">
+                <span class="text-xs font-semibold text-emerald-800" id="difficulty-label">Dificuldade da IA:</span>
+                <div class="flex bg-emerald-50 p-0.5 rounded-lg border border-emerald-100">
+                    <button id="diff-easy" class="px-3 py-1 text-xs font-bold rounded-md bg-white text-emerald-800 shadow-sm">Fácil</button>
+                    <button id="diff-hard" class="px-3 py-1 text-xs font-bold rounded-md text-emerald-600 hover:text-emerald-800">Imbatível</button>
+                </div>
+            </div>
+
             <!-- Placar de Pontos -->
             <div class="grid grid-cols-3 gap-2 text-center">
                 <div class="bg-blue-50 p-2 rounded-xl border border-blue-100">
-                    <div class="text-xs font-semibold text-blue-600 uppercase">Jogador X</div>
+                    <div id="score-name-x" class="text-[10px] font-semibold text-blue-600 uppercase truncate">Jogador X</div>
                     <div id="score-x" class="text-xl font-bold text-blue-800">0</div>
                 </div>
                 <div class="bg-gray-50 p-2 rounded-xl border border-gray-100 flex flex-col justify-center">
-                    <div class="text-xs font-semibold text-gray-500 uppercase">Velhas</div>
+                    <div class="text-[10px] font-semibold text-gray-500 uppercase">Empates</div>
                     <div id="score-ties" class="text-xl font-bold text-gray-700">0</div>
                 </div>
-                <div class="bg-rose-50 p-2 rounded-xl border border-rose-100">
-                    <div id="p2-title" class="text-xs font-semibold text-rose-600 uppercase">Jogador O</div>
+                <div class="bg-rose-50 p-2 rounded-xl border border-rose-100 transition-colors duration-500" id="score-o-card">
+                    <div id="p2-title" class="text-[10px] font-semibold text-rose-600 uppercase truncate">Jogador O</div>
                     <div id="score-o" class="text-xl font-bold text-rose-800">0</div>
                 </div>
             </div>
 
             <!-- Turno Atual -->
-            <div id="turn-indicator" class="text-center font-semibold text-emerald-800 py-1 border-t border-emerald-50 mt-1 flex items-center justify-center gap-2">
-                Turno do Jogador <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-md font-extrabold text-sm flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500"></span> X</span>
+            <div id="turn-indicator" class="text-center font-semibold text-emerald-800 py-1 border-t border-emerald-50 mt-1 flex items-center justify-center gap-2 transition-colors duration-500">
+                Vez de: <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-md font-extrabold text-sm flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-blue-500"></span> Jogador X</span>
             </div>
         </div>
 
         <!-- Tabuleiro -->
-        <div class="bg-emerald-800/20 p-4 rounded-3xl shadow-xl border border-white/50 w-full aspect-square max-w-[360px] md:max-w-[400px]">
+        <div id="board-container" class="bg-emerald-800/20 p-4 rounded-3xl shadow-xl border border-white/50 w-full aspect-square max-w-[350px] md:max-w-[380px] transition-colors duration-500">
             <div class="grid grid-cols-3 gap-3 h-full w-full">
                 <!-- Células do Tabuleiro -->
-                <button class="grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm" data-index="0"></button>
-                <button class="grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm" data-index="1"></button>
-                <button class="grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm" data-index="2"></button>
-                <button class="grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm" data-index="3"></button>
-                <button class="grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm" data-index="4"></button>
-                <button class="grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm" data-index="5"></button>
-                <button class="grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm" data-index="6"></button>
-                <button class="grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm" data-index="7"></button>
-                <button class="grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm" data-index="8"></button>
+                <button class="grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm text-blue-600" data-index="0"></button>
+                <button class="grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm text-blue-600" data-index="1"></button>
+                <button class="grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm text-blue-600" data-index="2"></button>
+                <button class="grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm text-blue-600" data-index="3"></button>
+                <button class="grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm text-blue-600" data-index="4"></button>
+                <button class="grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm text-blue-600" data-index="5"></button>
+                <button class="grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm text-blue-600" data-index="6"></button>
+                <button class="grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm text-blue-600" data-index="7"></button>
+                <button class="grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm text-blue-600" data-index="8"></button>
             </div>
         </div>
 
@@ -120,15 +175,15 @@
                 <i id="result-icon" data-lucide="trophy" class="w-8 h-8 text-emerald-600"></i>
             </div>
             <h2 id="result-title" class="text-2xl font-extrabold text-emerald-800">Temos um Vencedor!</h2>
-            <p id="result-message" class="text-emerald-700 font-medium">O jogador X venceu esta rodada!</p>
+            <p id="result-message" class="text-emerald-700 font-medium">O jogador X venceu esta ronda!</p>
             <button id="btn-close-modal" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors">
-                Próxima Rodada
+                Próxima Ronda
             </button>
         </div>
     </div>
 
     <!-- Rodapé -->
-    <footer class="text-emerald-800/60 text-xs font-semibold mt-6 mb-2">
+    <footer id="footer-el" class="text-emerald-800/60 text-xs font-semibold mt-6 mb-2 transition-colors duration-500">
         Criado com HTML, CSS e Vanilla JS
     </footer>
 
@@ -138,28 +193,60 @@
 
         // Variáveis de Estado do Jogo
         let board = ["", "", "", "", "", "", "", "", ""];
-        let currentPlayer = "X"; // X sempre começa
+        let currentPlayer = "X"; // X começa sempre
         let isGameActive = true;
         let gameMode = "pvp"; // 'pvp' ou 'ai'
+        let aiDifficulty = "easy"; // 'easy' ou 'hard'
+        let currentTheme = "green"; // 'green' ou 'blue'
         
+        // Nomes customizáveis
+        let namePlayerX = "Jogador X";
+        let namePlayerO = "Jogador O";
+
         let scoreX = 0;
         let scoreO = 0;
         let scoreTies = 0;
 
-        // Combinações de vitória possíveis no Jogo da Velha
+        // Contexto de Áudio Partilhado (inicializado após interação do utilizador)
+        let audioCtx = null;
+
+        // Combinações de vitória possíveis no Jogo do Galo
         const winningConditions = [
             [0, 1, 2], [3, 4, 5], [6, 7, 8], // Horizontais
             [0, 3, 6], [1, 4, 7], [2, 5, 8], // Verticais
             [0, 4, 8], [2, 4, 6]             // Diagonais
         ];
 
-        // Elementos do DOM
+        // Elementos do DOM - Configurações de Temas e Nomes
+        const themeBtnGreen = document.getElementById("theme-btn-green");
+        const themeBtnBlue = document.getElementById("theme-btn-blue");
+        const inputNameX = document.getElementById("input-name-x");
+        const inputNameO = document.getElementById("input-name-o");
+        const labelNameO = document.getElementById("label-name-o");
+        const scoreNameX = document.getElementById("score-name-x");
+
+        // Elementos de Estilo dos Temas (para alterar dinamicamente)
+        const mainTitle = document.getElementById("main-title");
+        const mainTitleIcon = document.getElementById("main-title-icon");
+        const subTitle = document.getElementById("sub-title");
+        const controlPanel = document.getElementById("control-panel");
+        const modeContainer = document.getElementById("mode-container");
+        const difficultyLabel = document.getElementById("difficulty-label");
+        const boardContainer = document.getElementById("board-container");
+        const btnRestart = document.getElementById("btn-restart");
+        const btnCloseModal = document.getElementById("btn-close-modal");
+        const footerEl = document.getElementById("footer-el");
+        const scoreOCard = document.getElementById("score-o-card");
+
+        // Elementos de Gameplay do DOM
         const cells = document.querySelectorAll(".grid-cell");
         const turnIndicator = document.getElementById("turn-indicator");
         const btnPvp = document.getElementById("btn-pvp");
         const btnAi = document.getElementById("btn-ai");
-        const btnRestart = document.getElementById("btn-restart");
         const p2Title = document.getElementById("p2-title");
+        const difficultyContainer = document.getElementById("difficulty-container");
+        const btnDiffEasy = document.getElementById("diff-easy");
+        const btnDiffHard = document.getElementById("diff-hard");
         
         // Placar
         const scoreXEl = document.getElementById("score-x");
@@ -170,70 +257,190 @@
         const resultModal = document.getElementById("result-modal");
         const resultTitle = document.getElementById("result-title");
         const resultMessage = document.getElementById("result-message");
-        const btnCloseModal = document.getElementById("btn-close-modal");
         const resultIconContainer = document.getElementById("result-icon-container");
 
         // Gerador de Som com Web Audio API para feedback sonoro imersivo
         const playSound = (type) => {
             try {
-                const ctx = new (window.AudioContext || window.webkitAudioContext)();
-                const osc = ctx.createOscillator();
-                const gain = ctx.createGain();
+                if (!audioCtx) {
+                    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+                if (audioCtx.state === 'suspended') {
+                    audioCtx.resume();
+                }
+
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
                 
                 osc.connect(gain);
-                gain.connect(ctx.destination);
+                gain.connect(audioCtx.destination);
 
                 if (type === 'click') {
-                    osc.frequency.setValueAtTime(440, ctx.currentTime); // Nota Lá
-                    gain.gain.setValueAtTime(0.05, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.1);
+                    osc.frequency.setValueAtTime(440, audioCtx.currentTime); // Nota Lá
+                    gain.gain.setValueAtTime(0.05, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.1);
                     osc.start();
-                    osc.stop(ctx.currentTime + 0.1);
+                    osc.stop(audioCtx.currentTime + 0.1);
                 } else if (type === 'win') {
                     osc.type = 'triangle';
-                    osc.frequency.setValueAtTime(523.25, ctx.currentTime); // C5
-                    osc.frequency.setValueAtTime(659.25, ctx.currentTime + 0.1, 0.1); // E5
-                    osc.frequency.setValueAtTime(783.99, ctx.currentTime + 0.2, 0.1); // G5
-                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.4);
+                    osc.frequency.setValueAtTime(523.25, audioCtx.currentTime); // C5
+                    osc.frequency.setValueAtTime(659.25, audioCtx.currentTime + 0.1, 0.1); // E5
+                    osc.frequency.setValueAtTime(783.99, audioCtx.currentTime + 0.2, 0.1); // G5
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.4);
                     osc.start();
-                    osc.stop(ctx.currentTime + 0.4);
+                    osc.stop(audioCtx.currentTime + 0.4);
                 } else if (type === 'tie') {
-                    osc.frequency.setValueAtTime(220, ctx.currentTime); // Nota grave
-                    gain.gain.setValueAtTime(0.1, ctx.currentTime);
-                    gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.3);
+                    osc.frequency.setValueAtTime(220, audioCtx.currentTime); // Nota grave
+                    gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                    gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
                     osc.start();
-                    osc.stop(ctx.currentTime + 0.3);
+                    osc.stop(audioCtx.currentTime + 0.3);
                 }
             } catch (e) {
-                // Navegador bloqueou áudio ou não suporta
+                // Silencia erros caso o áudio seja bloqueado
             }
         };
 
-        // Atualiza o indicador visual do turno atual
-        function updateTurnIndicator() {
-            if (currentPlayer === "X") {
-                turnIndicator.innerHTML = `Turno do Jogador <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-md font-extrabold text-sm flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> X</span>`;
+        // Escuta as alterações nos inputs de texto para mudar os nomes em tempo real
+        inputNameX.addEventListener("input", (e) => {
+            namePlayerX = e.target.value.trim() || "Jogador X";
+            scoreNameX.textContent = namePlayerX;
+            updateTurnIndicator();
+        });
+
+        inputNameO.addEventListener("input", (e) => {
+            namePlayerO = e.target.value.trim() || "Jogador O";
+            p2Title.textContent = namePlayerO;
+            updateTurnIndicator();
+        });
+
+        // Alternador de Temas Estilizado
+        function switchTheme(theme) {
+            currentTheme = theme;
+            
+            if (theme === "green") {
+                document.body.className = "theme-green min-h-screen flex flex-col items-center justify-between p-4 md:p-8";
+                
+                // Ativar anel de destaque no botão correspondente
+                themeBtnGreen.classList.add("ring-2", "ring-offset-2", "ring-emerald-600");
+                themeBtnBlue.classList.remove("ring-2", "ring-offset-2", "ring-sky-600");
+
+                // Atualizar classes de cores do tema Verde
+                mainTitle.className = "text-4xl font-extrabold text-emerald-800 tracking-tight flex items-center justify-center gap-2 transition-colors duration-500";
+                
+                // Seleção segura do ícone Lucide após renderização do SVG
+                const targetIcon = mainTitleIcon || mainTitle.querySelector('svg');
+                if (targetIcon) {
+                    targetIcon.className.baseVal = "w-10 h-10 text-emerald-600 transition-colors duration-500";
+                }
+                
+                subTitle.className = "text-emerald-700 font-medium mt-1 transition-colors duration-500";
+                
+                controlPanel.className = "bg-white/80 backdrop-blur-md rounded-2xl p-4 shadow-md w-full flex flex-col gap-4 border border-emerald-100 transition-colors duration-500";
+                modeContainer.className = "flex bg-emerald-100 p-1 rounded-xl transition-colors duration-500";
+                
+                // Botões de Modo
+                updateModeButtonsTheme();
+
+                difficultyLabel.className = "text-xs font-semibold text-emerald-800";
+                boardContainer.className = "bg-emerald-800/20 p-4 rounded-3xl shadow-xl border border-white/50 w-full aspect-square max-w-[350px] md:max-w-[380px] transition-colors duration-500";
+                
+                btnRestart.className = "w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2";
+                btnCloseModal.className = "w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl transition-colors";
+                footerEl.className = "text-emerald-800/60 text-xs font-semibold mt-6 mb-2 transition-colors duration-500";
+
+                // Inputs
+                inputNameX.className = "w-full px-3 py-1.5 text-sm bg-white border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-emerald-900 font-medium transition-all";
+                inputNameO.className = "w-full px-3 py-1.5 text-sm bg-white border border-emerald-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-emerald-500 text-emerald-900 font-medium transition-all";
+
             } else {
-                const label = gameMode === "ai" ? "IA" : "O";
-                const colorClass = gameMode === "ai" ? "bg-purple-100 text-purple-800" : "bg-rose-100 text-rose-800";
-                const dotClass = gameMode === "ai" ? "bg-purple-500" : "bg-rose-500";
-                turnIndicator.innerHTML = `Turno do Jogador <span class="px-2 py-0.5 ${colorClass} rounded-md font-extrabold text-sm flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full ${dotClass}"></span> ${label}</span>`;
+                document.body.className = "theme-blue min-h-screen flex flex-col items-center justify-between p-4 md:p-8";
+
+                // Ativar anel de destaque no botão correspondente
+                themeBtnBlue.classList.add("ring-2", "ring-offset-2", "ring-sky-600");
+                themeBtnGreen.classList.remove("ring-2", "ring-offset-2", "ring-emerald-600");
+
+                // Atualizar classes de cores do tema Azul / Oceano
+                mainTitle.className = "text-4xl font-extrabold text-sky-800 tracking-tight flex items-center justify-center gap-2 transition-colors duration-500";
+                
+                // Seleção segura do ícone Lucide após renderização do SVG
+                const targetIcon = mainTitleIcon || mainTitle.querySelector('svg');
+                if (targetIcon) {
+                    targetIcon.className.baseVal = "w-10 h-10 text-sky-600 transition-colors duration-500";
+                }
+                
+                subTitle.className = "text-sky-700 font-medium mt-1 transition-colors duration-500";
+                
+                controlPanel.className = "bg-white/80 backdrop-blur-md rounded-2xl p-4 shadow-md w-full flex flex-col gap-4 border border-sky-100 transition-colors duration-500";
+                modeContainer.className = "flex bg-sky-100 p-1 rounded-xl transition-colors duration-500";
+                
+                // Botões de Modo
+                updateModeButtonsTheme();
+
+                difficultyLabel.className = "text-xs font-semibold text-sky-800";
+                boardContainer.className = "bg-sky-800/20 p-4 rounded-3xl shadow-xl border border-white/50 w-full aspect-square max-w-[350px] md:max-w-[380px] transition-colors duration-500";
+                
+                btnRestart.className = "w-full py-3 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-2xl shadow-md hover:shadow-lg transition-all duration-200 flex items-center justify-center gap-2";
+                btnCloseModal.className = "w-full py-3 bg-sky-600 hover:bg-sky-700 text-white font-bold rounded-xl transition-colors";
+                footerEl.className = "text-sky-800/60 text-xs font-semibold mt-6 mb-2 transition-colors duration-500";
+
+                // Inputs
+                inputNameX.className = "w-full px-3 py-1.5 text-sm bg-white border border-sky-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 text-sky-900 font-medium transition-all";
+                inputNameO.className = "w-full px-3 py-1.5 text-sm bg-white border border-sky-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 text-sky-900 font-medium transition-all";
+            }
+            updateTurnIndicator();
+        }
+
+        // Atualiza as cores dos botões de modo de jogo com base no tema selecionado
+        function updateModeButtonsTheme() {
+            if (currentTheme === "green") {
+                if (gameMode === "pvp") {
+                    btnPvp.className = "flex-1 py-2 text-sm font-semibold rounded-lg text-emerald-800 bg-white shadow transition-all duration-200 flex items-center justify-center gap-1";
+                    btnAi.className = "flex-1 py-2 text-sm font-semibold rounded-lg text-emerald-700 hover:text-emerald-800 transition-all duration-200 flex items-center justify-center gap-1";
+                } else {
+                    btnAi.className = "flex-1 py-2 text-sm font-semibold rounded-lg text-emerald-800 bg-white shadow transition-all duration-200 flex items-center justify-center gap-1";
+                    btnPvp.className = "flex-1 py-2 text-sm font-semibold rounded-lg text-emerald-700 hover:text-emerald-800 transition-all duration-200 flex items-center justify-center gap-1";
+                }
+            } else {
+                if (gameMode === "pvp") {
+                    btnPvp.className = "flex-1 py-2 text-sm font-semibold rounded-lg text-sky-800 bg-white shadow transition-all duration-200 flex items-center justify-center gap-1";
+                    btnAi.className = "flex-1 py-2 text-sm font-semibold rounded-lg text-sky-700 hover:text-sky-800 transition-all duration-200 flex items-center justify-center gap-1";
+                } else {
+                    btnAi.className = "flex-1 py-2 text-sm font-semibold rounded-lg text-sky-800 bg-white shadow transition-all duration-200 flex items-center justify-center gap-1";
+                    btnPvp.className = "flex-1 py-2 text-sm font-semibold rounded-lg text-sky-700 hover:text-sky-800 transition-all duration-200 flex items-center justify-center gap-1";
+                }
             }
         }
 
-        // Trata o clique do jogador numa célula
+        // Configuração dos Botões de Tema
+        themeBtnGreen.addEventListener("click", () => switchTheme("green"));
+        themeBtnBlue.addEventListener("click", () => switchTheme("blue"));
+
+        // Atualiza o indicador de cuja vez é a jogada utilizando os nomes dinâmicos
+        function updateTurnIndicator() {
+            if (currentPlayer === "X") {
+                turnIndicator.innerHTML = `Vez de: <span class="px-2 py-0.5 bg-blue-100 text-blue-800 rounded-md font-extrabold text-sm flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full bg-blue-500"></span> ${namePlayerX}</span>`;
+            } else {
+                const label = gameMode === "ai" ? "IA" : namePlayerO;
+                const colorClass = gameMode === "ai" ? "bg-purple-100 text-purple-800" : "bg-rose-100 text-rose-800";
+                const dotClass = gameMode === "ai" ? "bg-purple-500" : "bg-rose-500";
+                turnIndicator.innerHTML = `Vez de: <span class="px-2 py-0.5 ${colorClass} rounded-md font-extrabold text-sm flex items-center gap-1"><span class="w-2.5 h-2.5 rounded-full ${dotClass}"></span> ${label}</span>`;
+            }
+        }
+
+        // Trata o clique do utilizador numa célula do tabuleiro
         function handleCellClick(event) {
-            const clickedCell = event.target;
+            const clickedCell = event.currentTarget;
             const clickedCellIndex = parseInt(clickedCell.getAttribute('data-index'));
 
-            // Verifica se a célula está ocupada ou o jogo acabou ou é a vez da IA jogar
+            // Ignora cliques se o jogo estiver inativo ou se a casa estiver ocupada
             if (board[clickedCellIndex] !== "" || !isGameActive) {
                 return;
             }
 
             if (gameMode === "ai" && currentPlayer === "O") {
-                return; // Impede clique enquanto a IA pensa/joga
+                return; 
             }
 
             makeMove(clickedCellIndex, currentPlayer);
@@ -241,7 +448,7 @@
             checkResult();
         }
 
-        // Executa visualmente e na lógica o movimento de um jogador
+        // Executa a jogada na lógica e renderiza visualmente
         function makeMove(index, player) {
             board[index] = player;
             const cell = cells[index];
@@ -255,7 +462,7 @@
             }
         }
 
-        // Verifica o estado atual do tabuleiro para decidir vencedor, velha ou continuação
+        // Verifica o estado final do tabuleiro
         function checkResult() {
             let roundWon = false;
             let winningLine = [];
@@ -285,7 +492,7 @@
                 return;
             }
 
-            // Empate (Velha) se não houver mais espaços em branco
+            // Empate (ronda sem espaços livres)
             let roundDraw = !board.includes("");
             if (roundDraw) {
                 isGameActive = false;
@@ -295,44 +502,47 @@
                 return;
             }
 
-            // Alterna jogador
+            // Troca o jogador
             currentPlayer = currentPlayer === "X" ? "O" : "X";
             updateTurnIndicator();
 
-            // Se for modo IA e for o turno dela
+            // Ação da IA se aplicável
             if (gameMode === "ai" && currentPlayer === "O" && isGameActive) {
-                setTimeout(makeAIMove, 600); // delay realista para simular "pensamento"
+                setTimeout(makeAIMove, 600); 
             }
         }
 
-        // Destaca visualmente a linha ganhadora
+        // Destaca a linha vencedora adaptando-se ao tema
         function highlightWinningCells(line) {
+            const pulseClass = currentTheme === "green" ? "winning-cell-green" : "winning-cell-blue";
             line.forEach(index => {
-                cells[index].classList.add("winning-cell");
+                cells[index].classList.add(pulseClass);
             });
         }
 
-        // Mostra modal de Vencedor
+        // Revela o modal com o vencedor personalizado
         function announceWinner(winner) {
             playSound('win');
             if (winner === "X") {
                 scoreX++;
                 scoreXEl.textContent = scoreX;
-                resultTitle.textContent = "Vitória do X!";
-                resultMessage.textContent = "O Jogador X superou seu oponente com maestria nesta rodada.";
+                resultTitle.textContent = `Vitória de ${namePlayerX}!`;
+                resultMessage.textContent = `Incrível prestação! ${namePlayerX} levou a melhor nesta ronda.`;
                 resultIconContainer.className = "w-16 h-16 rounded-full flex items-center justify-center bg-blue-100";
                 resultIconContainer.innerHTML = `<i id="result-icon" data-lucide="trophy" class="w-8 h-8 text-blue-600"></i>`;
             } else {
                 scoreO++;
                 scoreOEl.textContent = scoreO;
+                const oWinnerName = gameMode === "ai" ? "IA" : namePlayerO;
+                
+                resultTitle.textContent = `Vitória de ${oWinnerName}!`;
+                
                 if (gameMode === "ai") {
-                    resultTitle.textContent = "Vitória da IA!";
-                    resultMessage.textContent = "A Inteligência Artificial levou a melhor dessa vez!";
+                    resultMessage.textContent = "A Inteligência Artificial previu todos os teus movimentos!";
                     resultIconContainer.className = "w-16 h-16 rounded-full flex items-center justify-center bg-purple-100";
                     resultIconContainer.innerHTML = `<i id="result-icon" data-lucide="cpu" class="w-8 h-8 text-purple-600"></i>`;
                 } else {
-                    resultTitle.textContent = "Vitória do O!";
-                    resultMessage.textContent = "O Jogador O conquistou a vitória com excelentes estratégias.";
+                    resultMessage.textContent = `Parabéns! ${namePlayerO} jogou uma tática perfeita e venceu.`;
                     resultIconContainer.className = "w-16 h-16 rounded-full flex items-center justify-center bg-rose-100";
                     resultIconContainer.innerHTML = `<i id="result-icon" data-lucide="trophy" class="w-8 h-8 text-rose-600"></i>`;
                 }
@@ -341,46 +551,52 @@
             resultModal.classList.remove("hidden");
         }
 
-        // Mostra modal de Empate (Velha)
+        // Anuncia o Empate no modal
         function announceDraw() {
             playSound('tie');
             scoreTies++;
             scoreTiesEl.textContent = scoreTies;
-            resultTitle.textContent = "Deu Velha!";
-            resultMessage.textContent = "Tudo igual! Um belo equilíbrio tático de ambos os lados.";
+            resultTitle.textContent = "Empate!";
+            resultMessage.textContent = "Ambos os lados jogaram com segurança total. Grande equilíbrio!";
             resultIconContainer.className = "w-16 h-16 rounded-full flex items-center justify-center bg-gray-100";
             resultIconContainer.innerHTML = `<i id="result-icon" data-lucide="scale" class="w-8 h-8 text-gray-500"></i>`;
             lucide.createIcons();
             resultModal.classList.remove("hidden");
         }
 
-        // Lógica de Movimento da IA (Minimax para ser imbatível)
+        // Algoritmo para a jogada da IA
         function makeAIMove() {
             if (!isGameActive) return;
 
-            let bestScore = -Infinity;
             let move;
 
-            // Percorre todas as posições livres e simula a jogada
-            for (let i = 0; i < 9; i++) {
-                if (board[i] === "") {
-                    board[i] = "O";
-                    let score = minimax(board, 0, false);
-                    board[i] = "";
-                    if (score > bestScore) {
-                        bestScore = score;
-                        move = i;
+            if (aiDifficulty === "easy" && Math.random() < 0.4) {
+                let availableMoves = [];
+                for (let i = 0; i < 9; i++) {
+                    if (board[i] === "") availableMoves.push(i);
+                }
+                move = availableMoves[Math.floor(Math.random() * availableMoves.length)];
+            } else {
+                let bestScore = -Infinity;
+                for (let i = 0; i < 9; i++) {
+                    if (board[i] === "") {
+                        board[i] = "O";
+                        let score = minimax(board, 0, false);
+                        board[i] = "";
+                        if (score > bestScore) {
+                            bestScore = score;
+                            move = i;
+                        }
                     }
                 }
             }
 
-            // Realiza a jogada escolhida
             makeMove(move, "O");
             playSound('click');
             checkResult();
         }
 
-        // Algoritmo Minimax para o Jogo da Velha inteligente
+        // Minimax para inteligência artificial lógica
         function minimax(tempBoard, depth, isMaximizing) {
             let result = evaluateBoard(tempBoard);
             if (result !== null) {
@@ -412,7 +628,6 @@
             }
         }
 
-        // Função de utilidade para o Minimax
         function evaluateBoard(tempBoard) {
             for (let i = 0; i < winningConditions.length; i++) {
                 const [a, b, c] = winningConditions[i];
@@ -421,12 +636,12 @@
                 }
             }
             if (!tempBoard.includes("")) {
-                return 0; // Empate
+                return 0;
             }
-            return null; // Jogo ainda ocorrendo
+            return null;
         }
 
-        // Reinicia o tabuleiro, mantendo as pontuações atuais intactas
+        // Limpa o tabuleiro de jogo mantendo o histórico de pontuações
         function restartBoard() {
             board = ["", "", "", "", "", "", "", "", ""];
             isGameActive = true;
@@ -434,14 +649,14 @@
             
             cells.forEach(cell => {
                 cell.innerHTML = "";
-                cell.className = "grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm";
+                cell.className = "grid-cell bg-white/90 rounded-2xl flex items-center justify-center text-4xl md:text-5xl font-extrabold shadow-sm text-blue-600";
             });
 
             updateTurnIndicator();
             resultModal.classList.add("hidden");
         }
 
-        // Reinicia tudo (incluindo placar e muda o modo de jogo)
+        // Altera as opções visuais e de lógica de acordo com o modo de jogo
         function changeGameMode(mode) {
             gameMode = mode;
             scoreX = 0;
@@ -452,31 +667,59 @@
             scoreOEl.textContent = "0";
             scoreTiesEl.textContent = "0";
 
+            updateModeButtonsTheme();
+
             if (mode === "ai") {
-                btnAi.classList.add("bg-white", "shadow", "text-emerald-800");
-                btnAi.classList.remove("text-emerald-700");
-                btnPvp.classList.remove("bg-white", "shadow", "text-emerald-800");
-                btnPvp.classList.add("text-emerald-700");
                 p2Title.textContent = "IA (O)";
-                p2Title.className = "text-xs font-semibold text-purple-600 uppercase";
+                p2Title.className = "text-[10px] font-semibold text-purple-600 uppercase truncate";
+                scoreOCard.className = "bg-purple-50 p-2 rounded-xl border border-purple-100 flex flex-col justify-center transition-colors duration-500";
+                
+                difficultyContainer.classList.remove("hidden");
+                inputNameO.disabled = true;
+                inputNameO.value = "IA";
+                inputNameO.classList.add("opacity-50", "cursor-not-allowed");
+                labelNameO.textContent = "Nome IA";
             } else {
-                btnPvp.classList.add("bg-white", "shadow", "text-emerald-800");
-                btnPvp.classList.remove("text-emerald-700");
-                btnAi.classList.remove("bg-white", "shadow", "text-emerald-800");
-                btnAi.classList.add("text-emerald-700");
-                p2Title.textContent = "Jogador O";
-                p2Title.className = "text-xs font-semibold text-rose-600 uppercase";
+                p2Title.textContent = namePlayerO;
+                p2Title.className = "text-[10px] font-semibold text-rose-600 uppercase truncate";
+                scoreOCard.className = "bg-rose-50 p-2 rounded-xl border border-rose-100 flex flex-col justify-center transition-colors duration-500";
+                
+                difficultyContainer.classList.add("hidden");
+                inputNameO.disabled = false;
+                inputNameO.value = namePlayerO === "IA" ? "Jogador O" : namePlayerO;
+                namePlayerO = inputNameO.value;
+                inputNameO.classList.remove("opacity-50", "cursor-not-allowed");
+                labelNameO.textContent = "Nome Jogador O";
             }
 
             restartBoard();
         }
 
-        // Event Listeners
+        // Define a dificuldade da inteligência artificial
+        function changeDifficulty(level) {
+            aiDifficulty = level;
+            if (level === "easy") {
+                btnDiffEasy.classList.add("bg-white", "text-emerald-800", "shadow-sm");
+                btnDiffEasy.classList.remove("text-emerald-600");
+                btnDiffHard.classList.remove("bg-white", "text-emerald-800", "shadow-sm");
+                btnDiffHard.classList.add("text-emerald-600");
+            } else {
+                btnDiffHard.classList.add("bg-white", "text-emerald-800", "shadow-sm");
+                btnDiffHard.classList.remove("text-emerald-600");
+                btnDiffEasy.classList.remove("bg-white", "text-emerald-800", "shadow-sm");
+                btnDiffEasy.classList.add("text-emerald-600");
+            }
+            restartBoard();
+        }
+
+        // Configuração dos Event Listeners de Células e Modos de Jogo
         cells.forEach(cell => cell.addEventListener('click', handleCellClick));
         btnPvp.addEventListener('click', () => changeGameMode('pvp'));
         btnAi.addEventListener('click', () => changeGameMode('ai'));
         btnRestart.addEventListener('click', restartBoard);
         btnCloseModal.addEventListener('click', restartBoard);
+        btnDiffEasy.addEventListener('click', () => changeDifficulty('easy'));
+        btnDiffHard.addEventListener('click', () => changeDifficulty('hard'));
     </script>
 </body>
 </html>
